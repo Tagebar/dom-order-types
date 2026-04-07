@@ -32,94 +32,100 @@ function Pill({ text, color, d }) {
 function SH({ text, color, d }) {
   return <div style={{ fontSize: d ? 15 : 12, fontWeight: 700, color, fontFamily: M, marginBottom: d ? 10 : 8, display: "flex", alignItems: "center", gap: 6 }}><div style={{ width: 3, height: d ? 18 : 14, background: color, borderRadius: 2 }} />{text}</div>;
 }
-function Box({ children, border, top, d }) {
-  return <div style={{ background: "#0f172a", border: `1px solid ${border || "#1e293b"}`, borderRadius: d ? 10 : 8, padding: d ? 20 : 14, ...(top ? { borderTop: `2px solid ${top}` } : {}) }}>{children}</div>;
+function Box({ children, border, top, d, style: extraStyle }) {
+  return <div style={{ background: "#0f172a", border: `1px solid ${border || "#1e293b"}`, borderRadius: d ? 10 : 8, padding: d ? 20 : 14, ...(top ? { borderTop: `2px solid ${top}` } : {}), ...extraStyle }}>{children}</div>;
+}
+
+/* ═══ DOM Ladder (reusable) ═══ */
+function DomLadder({ d, prices, center, asks, bids, annotations }) {
+  return (
+    <div style={{ width: "100%", maxWidth: d ? 580 : 440 }}>
+      <div style={{ display: "flex", padding: "6px 0", borderBottom: "1px solid #1e293b" }}>
+        <div style={{ flex: 1, fontSize: d ? 11 : 9, color: "#22c55e", textAlign: "center", fontFamily: M, letterSpacing: 1.5 }}>BID (Buy)</div>
+        <div style={{ width: d ? 90 : 70, fontSize: d ? 11 : 9, color: "#64748b", textAlign: "center", fontFamily: M, letterSpacing: 1.5 }}>PRICE</div>
+        <div style={{ flex: 1, fontSize: d ? 11 : 9, color: "#ef4444", textAlign: "center", fontFamily: M, letterSpacing: 1.5 }}>ASK (Sell)</div>
+      </div>
+      {prices.map((p, i) => {
+        const isAbove = i < center;
+        const isBelow = i > center;
+        const isMid = i === center;
+        const bid = isBelow ? bids[i - center - 1] : "";
+        const ask = isAbove ? asks[i] : "";
+        const ann = annotations?.[i] || {};
+
+        return (
+          <div key={i} style={{
+            display: "flex", alignItems: "center", height: d ? 42 : 34,
+            background: isMid ? "linear-gradient(90deg, #1e3a5f 0%, #0a0e17 50%, #5f1e1e 100%)" : "transparent",
+            borderBottom: "1px solid #0f1629",
+          }}>
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+              {ann.left && <span style={{ fontSize: d ? 11 : 9, color: "#22c55e88", fontFamily: M }}>{ann.left}</span>}
+              {bid && <div style={{ background: "#22c55e18", borderRadius: 3, padding: d ? "3px 10px" : "2px 8px", fontSize: d ? 15 : 12, color: "#22c55e", fontFamily: M, fontWeight: 500, minWidth: d ? 40 : 32, textAlign: "center" }}>{bid}</div>}
+              {isMid && <span style={{ fontSize: d ? 12 : 9, color: "#22c55e", fontFamily: M, fontWeight: 700 }}>Best Bid →</span>}
+            </div>
+            <div style={{
+              width: d ? 90 : 70, textAlign: "center", fontSize: d ? 16 : 13,
+              fontWeight: isMid ? 800 : 500, fontFamily: M,
+              color: isMid ? "#f8fafc" : isAbove ? "#fca5a5" : "#86efac",
+            }}>{p}</div>
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+              {isMid && <span style={{ fontSize: d ? 12 : 9, color: "#ef4444", fontFamily: M, fontWeight: 700 }}>← Best Ask</span>}
+              {ask && <div style={{ background: "#ef444418", borderRadius: 3, padding: d ? "3px 10px" : "2px 8px", fontSize: d ? 15 : 12, color: "#ef4444", fontFamily: M, fontWeight: 500, minWidth: d ? 40 : 32, textAlign: "center" }}>{ask}</div>}
+              {ann.right && <span style={{ fontSize: d ? 11 : 9, color: "#ef444488", fontFamily: M }}>{ann.right}</span>}
+            </div>
+          </div>
+        );
+      })}
+      <div style={{ textAlign: "center", marginTop: 6, fontSize: d ? 12 : 10, color: "#64748b", fontFamily: M }}>
+        Spread = Best Ask − Best Bid = 1 tick
+      </div>
+    </div>
+  );
 }
 
 /* ═══ TAB 1: THE DOM ═══ */
 function DomView({ d }) {
   const P = [4180, 4179, 4178, 4177, 4176, 4175, 4174, 4173, 4172, 4171, 4170, 4169, 4168];
-  const C = 6;
-  const asks = [38, 52, 74, 29, 61, 43];
-  const bids = [67, 31, 89, 55, 23, 71];
+  const annotations = {
+    1: { right: "Sell Limits rest here" },
+    2: { left: "Buy Stops trigger here" },
+    10: { right: "Sell Stops trigger here" },
+    11: { left: "Buy Limits rest here" },
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: d ? 20 : 14 }}>
       <div style={{ fontSize: d ? 13 : 11, color: "#94a3b8", textAlign: "center", fontFamily: M, letterSpacing: 1.2, textTransform: "uppercase" }}>The Depth of Market ladder</div>
 
-      {/* DOM Ladder */}
-      <div style={{ display: "flex", justifyContent: "center" }}>
-        <div style={{ width: "100%", maxWidth: d ? 580 : 440 }}>
-          {/* Header */}
-          <div style={{ display: "flex", padding: "6px 0", borderBottom: "1px solid #1e293b" }}>
-            <div style={{ flex: 1, fontSize: d ? 11 : 9, color: "#22c55e", textAlign: "center", fontFamily: M, letterSpacing: 1.5 }}>BID (Buy)</div>
-            <div style={{ width: d ? 90 : 70, fontSize: d ? 11 : 9, color: "#64748b", textAlign: "center", fontFamily: M, letterSpacing: 1.5 }}>PRICE</div>
-            <div style={{ flex: 1, fontSize: d ? 11 : 9, color: "#ef4444", textAlign: "center", fontFamily: M, letterSpacing: 1.5 }}>ASK (Sell)</div>
-          </div>
-          {P.map((p, i) => {
-            const isAbove = i < C;
-            const isBelow = i > C;
-            const isMid = i === C;
-            const bid = isBelow ? bids[i - C - 1] : "";
-            const ask = isAbove ? asks[i] : "";
-            let leftNote = "", rightNote = "";
-            if (i === 1) { rightNote = "Sell Limits rest here"; }
-            if (i === 2) { leftNote = "Buy Stops trigger here"; }
-            if (i === 10) { rightNote = "Sell Stops trigger here"; }
-            if (i === 11) { leftNote = "Buy Limits rest here"; }
-
-            return (
-              <div key={i} style={{
-                display: "flex", alignItems: "center", height: d ? 42 : 34,
-                background: isMid ? "linear-gradient(90deg, #1e3a5f 0%, #0a0e17 50%, #5f1e1e 100%)" : "transparent",
-                borderBottom: "1px solid #0f1629",
-              }}>
-                <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                  {leftNote && <span style={{ fontSize: d ? 11 : 9, color: "#22c55e88", fontFamily: M }}>{leftNote}</span>}
-                  {bid && <div style={{ background: "#22c55e18", borderRadius: 3, padding: d ? "3px 10px" : "2px 8px", fontSize: d ? 15 : 12, color: "#22c55e", fontFamily: M, fontWeight: 500, minWidth: d ? 40 : 32, textAlign: "center" }}>{bid}</div>}
-                  {isMid && <span style={{ fontSize: d ? 12 : 9, color: "#22c55e", fontFamily: M, fontWeight: 700 }}>Best Bid →</span>}
-                </div>
-                <div style={{
-                  width: d ? 90 : 70, textAlign: "center", fontSize: d ? 16 : 13,
-                  fontWeight: isMid ? 800 : 500, fontFamily: M,
-                  color: isMid ? "#f8fafc" : isAbove ? "#fca5a5" : "#86efac",
-                }}>{p}</div>
-                <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                  {isMid && <span style={{ fontSize: d ? 12 : 9, color: "#ef4444", fontFamily: M, fontWeight: 700 }}>← Best Ask</span>}
-                  {ask && <div style={{ background: "#ef444418", borderRadius: 3, padding: d ? "3px 10px" : "2px 8px", fontSize: d ? 15 : 12, color: "#ef4444", fontFamily: M, fontWeight: 500, minWidth: d ? 40 : 32, textAlign: "center" }}>{ask}</div>}
-                  {rightNote && <span style={{ fontSize: d ? 11 : 9, color: "#ef444488", fontFamily: M }}>{rightNote}</span>}
-                </div>
-              </div>
-            );
-          })}
-          <div style={{ textAlign: "center", marginTop: 6, fontSize: d ? 12 : 10, color: "#64748b", fontFamily: M }}>
-            Spread = Best Ask − Best Bid = 1 tick
-          </div>
+      {/* Desktop: ladder left, boxes right */}
+      <div style={{ display: "flex", flexDirection: d ? "row" : "column", gap: d ? 24 : 14, alignItems: d ? "flex-start" : "stretch" }}>
+        <div style={{ display: "flex", justifyContent: "center", flex: d ? "1 1 0" : undefined }}>
+          <DomLadder d={d} prices={P} center={6} asks={[38, 52, 74, 29, 61, 43]} bids={[67, 31, 89, 55, 23, 71]} annotations={annotations} />
         </div>
-      </div>
 
-      {/* Order placement rules */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: d ? 14 : 10 }}>
-        <Box top="#3b82f6" d={d}>
-          <SH text="LIMIT ORDERS" color="#3b82f6" d={d} />
-          <div style={{ fontSize: d ? 14 : 11, color: "#cbd5e1", fontFamily: M, lineHeight: 1.7 }}>
-            Passive — rest in the book.<br />
-            Buy Limit → <span style={{ color: "#22c55e", fontWeight: 600 }}>below</span> market<br />
-            Sell Limit → <span style={{ color: "#ef4444", fontWeight: 600 }}>above</span> market<br />
-            Fill at your price or better.<br />
-            <span style={{ color: "#94a3b8" }}>You provide liquidity.</span>
-          </div>
-        </Box>
-        <Box top="#f59e0b" d={d}>
-          <SH text="STOP ORDERS" color="#f59e0b" d={d} />
-          <div style={{ fontSize: d ? 14 : 11, color: "#cbd5e1", fontFamily: M, lineHeight: 1.7 }}>
-            Dormant until triggered.<br />
-            Buy Stop → <span style={{ color: "#22c55e", fontWeight: 600 }}>above</span> market<br />
-            Sell Stop → <span style={{ color: "#ef4444", fontWeight: 600 }}>below</span> market<br />
-            Becomes market order → slippage.<br />
-            <span style={{ color: "#94a3b8" }}>You take liquidity.</span>
-          </div>
-        </Box>
+        <div style={{ display: "flex", flexDirection: "column", gap: d ? 14 : 10, flex: d ? "0 0 340px" : undefined }}>
+          <Box top="#3b82f6" d={d}>
+            <SH text="LIMIT ORDERS" color="#3b82f6" d={d} />
+            <div style={{ fontSize: d ? 14 : 11, color: "#cbd5e1", fontFamily: M, lineHeight: 1.7 }}>
+              Passive — rest in the book.<br />
+              Buy Limit → <span style={{ color: "#22c55e", fontWeight: 600 }}>below</span> market<br />
+              Sell Limit → <span style={{ color: "#ef4444", fontWeight: 600 }}>above</span> market<br />
+              Fill at your price or better.<br />
+              <span style={{ color: "#94a3b8" }}>You provide liquidity.</span>
+            </div>
+          </Box>
+          <Box top="#f59e0b" d={d}>
+            <SH text="STOP ORDERS" color="#f59e0b" d={d} />
+            <div style={{ fontSize: d ? 14 : 11, color: "#cbd5e1", fontFamily: M, lineHeight: 1.7 }}>
+              Dormant until triggered.<br />
+              Buy Stop → <span style={{ color: "#22c55e", fontWeight: 600 }}>above</span> market<br />
+              Sell Stop → <span style={{ color: "#ef4444", fontWeight: 600 }}>below</span> market<br />
+              Becomes market order → slippage.<br />
+              <span style={{ color: "#94a3b8" }}>You take liquidity.</span>
+            </div>
+          </Box>
+        </div>
       </div>
     </div>
   );
@@ -135,7 +141,7 @@ function AuctionView({ d }) {
       <Box top="#60a5fa" d={d}>
         <SH text="THE BID, THE ASK & THE SPREAD" color="#60a5fa" d={d} />
         <div style={{ display: "flex", justifyContent: "center", margin: "8px 0 12px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 0, width: "100%", maxWidth: d ? 480 : 380 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 0, width: "100%", maxWidth: d ? 520 : 380 }}>
             <div style={{ flex: 1, textAlign: "center", padding: d ? "14px 12px" : "10px 8px", background: "#22c55e11", borderRadius: "8px 0 0 8px", border: "1px solid #22c55e33" }}>
               <div style={{ fontSize: d ? 11 : 9, color: "#22c55e88", fontFamily: M, letterSpacing: 1 }}>BID</div>
               <div style={{ fontSize: d ? 24 : 18, color: "#22c55e", fontFamily: M, fontWeight: 800 }}>4174</div>
@@ -160,84 +166,87 @@ function AuctionView({ d }) {
         </div>
       </Box>
 
-      {/* Aggressive vs Passive */}
-      <Box d={d}>
-        <SH text="HOW A TRADE ACTUALLY HAPPENS" color="#f59e0b" d={d} />
-        <div style={{ fontSize: d ? 14 : 11, color: "#94a3b8", fontFamily: M, lineHeight: 1.7, marginBottom: 12 }}>
-          A trade occurs when someone <span style={{ color: "#f8fafc", fontWeight: 600 }}>crosses the spread</span> — they pay the other side's price instead of waiting.
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: d ? 14 : 10 }}>
-          <div style={{ background: "#22c55e08", border: "1px solid #22c55e22", borderRadius: 8, padding: d ? 16 : 12 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-              <span style={{ fontSize: d ? 18 : 14 }}>🟢</span>
-              <span style={{ fontSize: d ? 16 : 13, color: "#22c55e", fontWeight: 800, fontFamily: M }}>LIFT THE OFFER</span>
-              <Tag label="AGGRESSIVE BUY" color="#22c55e" d={d} />
-            </div>
-            <div style={{ fontSize: d ? 14 : 11, color: "#cbd5e1", fontFamily: M, lineHeight: 1.7 }}>
-              Buyer says "I'll pay <span style={{ color: "#ef4444", fontWeight: 600 }}>the Ask price</span> to get filled NOW."<br />
-              They cross the spread → hit the resting sell order → trade prints at the Ask.<br />
-              <span style={{ color: "#64748b" }}>On the footprint: this shows as a trade on the <span style={{ color: "#ef4444" }}>Ask column</span> → <span style={{ color: "#22c55e" }}>positive delta</span> (buying pressure).</span>
-            </div>
+      {/* Desktop: two-column for Lift/Hit + Footprint */}
+      <div style={{ display: "flex", flexDirection: d ? "row" : "column", gap: d ? 20 : 14, alignItems: d ? "flex-start" : "stretch" }}>
+        {/* Left: How a trade happens */}
+        <Box d={d} style={{ flex: d ? "1 1 0" : undefined }}>
+          <SH text="HOW A TRADE ACTUALLY HAPPENS" color="#f59e0b" d={d} />
+          <div style={{ fontSize: d ? 14 : 11, color: "#94a3b8", fontFamily: M, lineHeight: 1.7, marginBottom: 12 }}>
+            A trade occurs when someone <span style={{ color: "#f8fafc", fontWeight: 600 }}>crosses the spread</span> — they pay the other side's price instead of waiting.
           </div>
-          <div style={{ background: "#ef444408", border: "1px solid #ef444422", borderRadius: 8, padding: d ? 16 : 12 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-              <span style={{ fontSize: d ? 18 : 14 }}>🔴</span>
-              <span style={{ fontSize: d ? 16 : 13, color: "#ef4444", fontWeight: 800, fontFamily: M }}>HIT THE BID</span>
-              <Tag label="AGGRESSIVE SELL" color="#ef4444" d={d} />
-            </div>
-            <div style={{ fontSize: d ? 14 : 11, color: "#cbd5e1", fontFamily: M, lineHeight: 1.7 }}>
-              Seller says "I'll accept <span style={{ color: "#22c55e", fontWeight: 600 }}>the Bid price</span> to get out NOW."<br />
-              They cross the spread → hit the resting buy order → trade prints at the Bid.<br />
-              <span style={{ color: "#64748b" }}>On the footprint: this shows as a trade on the <span style={{ color: "#22c55e" }}>Bid column</span> → <span style={{ color: "#ef4444" }}>negative delta</span> (selling pressure).</span>
-            </div>
-          </div>
-        </div>
-      </Box>
-
-      {/* Footprint connection */}
-      <Box top="#a78bfa" d={d}>
-        <SH text="READING IT ON THE FOOTPRINT" color="#a78bfa" d={d} />
-        <div style={{ display: "flex", justifyContent: "center", margin: "4px 0 12px" }}>
-          <div style={{ background: "#0a0e17", borderRadius: 6, border: "1px solid #1e293b", overflow: "hidden", width: "100%", maxWidth: d ? 400 : 300 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", padding: "4px 0", background: "#111827", borderBottom: "1px solid #1e293b" }}>
-              <div style={{ textAlign: "center", fontSize: d ? 11 : 9, color: "#22c55e88", fontFamily: M }}>BID VOL</div>
-              <div style={{ textAlign: "center", fontSize: d ? 11 : 9, color: "#64748b", fontFamily: M, padding: "0 8px" }}>PRICE</div>
-              <div style={{ textAlign: "center", fontSize: d ? 11 : 9, color: "#ef444488", fontFamily: M }}>ASK VOL</div>
-            </div>
-            {[
-              { p: 4177, b: 12, a: 89, highlight: "ask", note: "← Aggressive buyers here" },
-              { p: 4176, b: 45, a: 52 },
-              { p: 4175, b: 38, a: 41 },
-              { p: 4174, b: 67, a: 23 },
-              { p: 4173, b: 94, a: 8, highlight: "bid", note: "← Aggressive sellers here" },
-              { p: 4172, b: 55, a: 14 },
-            ].map((r, i) => (
-              <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", height: d ? 36 : 30, borderBottom: "1px solid #0f1629" }}>
-                <div style={{ textAlign: "center", fontSize: d ? 15 : 12, fontFamily: M, color: r.highlight === "bid" ? "#ef4444" : "#22c55e", fontWeight: r.highlight === "bid" ? 700 : 400, opacity: r.highlight === "bid" ? 1 : 0.6 }}>{r.b}</div>
-                <div style={{ textAlign: "center", fontSize: d ? 14 : 11, fontFamily: M, color: "#94a3b8", padding: "0 8px" }}>{r.p}</div>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
-                  <span style={{ fontSize: d ? 15 : 12, fontFamily: M, color: r.highlight === "ask" ? "#22c55e" : "#ef4444", fontWeight: r.highlight === "ask" ? 700 : 400, opacity: r.highlight === "ask" ? 1 : 0.6 }}>{r.a}</span>
-                  {r.note && <span style={{ fontSize: d ? 10 : 8, color: "#64748b", fontFamily: M }}>{r.note}</span>}
-                </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: d ? 14 : 10 }}>
+            <div style={{ background: "#22c55e08", border: "1px solid #22c55e22", borderRadius: 8, padding: d ? 16 : 12 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                <span style={{ fontSize: d ? 18 : 14 }}>🟢</span>
+                <span style={{ fontSize: d ? 16 : 13, color: "#22c55e", fontWeight: 800, fontFamily: M }}>LIFT THE OFFER</span>
+                <Tag label="AGGRESSIVE BUY" color="#22c55e" d={d} />
               </div>
-            ))}
+              <div style={{ fontSize: d ? 13 : 11, color: "#cbd5e1", fontFamily: M, lineHeight: 1.7 }}>
+                Buyer says "I'll pay <span style={{ color: "#ef4444", fontWeight: 600 }}>the Ask price</span> to get filled NOW."<br />
+                They cross the spread → hit the resting sell order → trade prints at the Ask.<br />
+                <span style={{ color: "#64748b" }}>Footprint: trade on <span style={{ color: "#ef4444" }}>Ask column</span> → <span style={{ color: "#22c55e" }}>+delta</span> (buying pressure).</span>
+              </div>
+            </div>
+            <div style={{ background: "#ef444408", border: "1px solid #ef444422", borderRadius: 8, padding: d ? 16 : 12 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                <span style={{ fontSize: d ? 18 : 14 }}>🔴</span>
+                <span style={{ fontSize: d ? 16 : 13, color: "#ef4444", fontWeight: 800, fontFamily: M }}>HIT THE BID</span>
+                <Tag label="AGGRESSIVE SELL" color="#ef4444" d={d} />
+              </div>
+              <div style={{ fontSize: d ? 13 : 11, color: "#cbd5e1", fontFamily: M, lineHeight: 1.7 }}>
+                Seller says "I'll accept <span style={{ color: "#22c55e", fontWeight: 600 }}>the Bid price</span> to get out NOW."<br />
+                They cross the spread → hit the resting buy order → trade prints at the Bid.<br />
+                <span style={{ color: "#64748b" }}>Footprint: trade on <span style={{ color: "#22c55e" }}>Bid column</span> → <span style={{ color: "#ef4444" }}>−delta</span> (selling pressure).</span>
+              </div>
+            </div>
           </div>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: d ? 14 : 11, color: "#cbd5e1", fontFamily: M, lineHeight: 1.7 }}>
-          <div><span style={{ color: "#22c55e", fontWeight: 700 }}>Big number on Ask side</span> = aggressive buyers lifted the offer = buying pressure = <span style={{ color: "#22c55e" }}>+delta</span></div>
-          <div><span style={{ color: "#ef4444", fontWeight: 700 }}>Big number on Bid side</span> = aggressive sellers hit the bid = selling pressure = <span style={{ color: "#ef4444" }}>−delta</span></div>
-          <div style={{ color: "#94a3b8", marginTop: 4 }}>
-            <span style={{ color: "#f8fafc", fontWeight: 600 }}>Delta</span> = Ask volume − Bid volume at each price.<br />
-            <span style={{ color: "#f8fafc", fontWeight: 600 }}>Cumulative Delta</span> = running total across bars → shows who's in control.
+        </Box>
+
+        {/* Right: Footprint */}
+        <Box top="#a78bfa" d={d} style={{ flex: d ? "1 1 0" : undefined }}>
+          <SH text="READING IT ON THE FOOTPRINT" color="#a78bfa" d={d} />
+          <div style={{ display: "flex", justifyContent: "center", margin: "4px 0 12px" }}>
+            <div style={{ background: "#0a0e17", borderRadius: 6, border: "1px solid #1e293b", overflow: "hidden", width: "100%", maxWidth: d ? 400 : 300 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", padding: "4px 0", background: "#111827", borderBottom: "1px solid #1e293b" }}>
+                <div style={{ textAlign: "center", fontSize: d ? 11 : 9, color: "#22c55e88", fontFamily: M }}>BID VOL</div>
+                <div style={{ textAlign: "center", fontSize: d ? 11 : 9, color: "#64748b", fontFamily: M, padding: "0 8px" }}>PRICE</div>
+                <div style={{ textAlign: "center", fontSize: d ? 11 : 9, color: "#ef444488", fontFamily: M }}>ASK VOL</div>
+              </div>
+              {[
+                { p: 4177, b: 12, a: 89, highlight: "ask", note: "← Aggressive buyers" },
+                { p: 4176, b: 45, a: 52 },
+                { p: 4175, b: 38, a: 41 },
+                { p: 4174, b: 67, a: 23 },
+                { p: 4173, b: 94, a: 8, highlight: "bid", note: "← Aggressive sellers" },
+                { p: 4172, b: 55, a: 14 },
+              ].map((r, i) => (
+                <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", height: d ? 36 : 30, borderBottom: "1px solid #0f1629" }}>
+                  <div style={{ textAlign: "center", fontSize: d ? 15 : 12, fontFamily: M, color: r.highlight === "bid" ? "#ef4444" : "#22c55e", fontWeight: r.highlight === "bid" ? 700 : 400, opacity: r.highlight === "bid" ? 1 : 0.6 }}>{r.b}</div>
+                  <div style={{ textAlign: "center", fontSize: d ? 14 : 11, fontFamily: M, color: "#94a3b8", padding: "0 8px" }}>{r.p}</div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
+                    <span style={{ fontSize: d ? 15 : 12, fontFamily: M, color: r.highlight === "ask" ? "#22c55e" : "#ef4444", fontWeight: r.highlight === "ask" ? 700 : 400, opacity: r.highlight === "ask" ? 1 : 0.6 }}>{r.a}</span>
+                    {r.note && <span style={{ fontSize: d ? 10 : 8, color: "#64748b", fontFamily: M }}>{r.note}</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-          <div style={{ color: "#94a3b8", marginTop: 4 }}>
-            <span style={{ color: "#f59e0b", fontWeight: 600 }}>Imbalance</span> = one side has 3× or more volume than the other → stacked imbalances = strong directional conviction.
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: d ? 13 : 11, color: "#cbd5e1", fontFamily: M, lineHeight: 1.7 }}>
+            <div><span style={{ color: "#22c55e", fontWeight: 700 }}>Big on Ask</span> = buyers lifted offer = <span style={{ color: "#22c55e" }}>+delta</span></div>
+            <div><span style={{ color: "#ef4444", fontWeight: 700 }}>Big on Bid</span> = sellers hit bid = <span style={{ color: "#ef4444" }}>−delta</span></div>
+            <div style={{ color: "#94a3b8", marginTop: 4 }}>
+              <span style={{ color: "#f8fafc", fontWeight: 600 }}>Delta</span> = Ask vol − Bid vol per price.<br />
+              <span style={{ color: "#f8fafc", fontWeight: 600 }}>Cum. Delta</span> = running total → who's in control.
+            </div>
+            <div style={{ color: "#94a3b8", marginTop: 4 }}>
+              <span style={{ color: "#f59e0b", fontWeight: 600 }}>Imbalance</span> = 3×+ one side → stacked = strong conviction.
+            </div>
+            <div style={{ color: "#94a3b8" }}>
+              <span style={{ color: "#a78bfa", fontWeight: 600 }}>Absorption</span> = big volume but price doesn't move → passive limits soaking aggression → often reversal.
+            </div>
           </div>
-          <div style={{ color: "#94a3b8" }}>
-            <span style={{ color: "#a78bfa", fontWeight: 600 }}>Absorption</span> = big volume on the bid but price doesn't drop (or big on ask but price doesn't rise) → passive limit orders soaking up aggression. Often precedes reversal.
-          </div>
-        </div>
-      </Box>
+        </Box>
+      </div>
 
       {/* Passive vs Aggressive summary */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: d ? 14 : 10 }}>
@@ -309,80 +318,84 @@ function TradeView({ side, d }) {
     <div style={{ display: "flex", flexDirection: "column", gap: d ? 20 : 14 }}>
       <div style={{ fontSize: d ? 13 : 11, color: "#94a3b8", textAlign: "center", fontFamily: M, letterSpacing: 1.2, textTransform: "uppercase" }}>{title}</div>
 
-      {/* DOM with annotations */}
-      <div style={{ display: "flex", justifyContent: "center" }}>
-        <div style={{ width: "100%", maxWidth: d ? 580 : 440 }}>
-          {prices.map((p, i) => {
-            const isEntry = i === entryIdx;
-            const isTp = i === tpIdx;
-            const isSl = i === slIdx;
-            const hasLabel = isEntry || isTp || isSl;
-            const labelColor = isEntry ? accent : isTp ? "#a78bfa" : "#f97316";
-            const labelText = isEntry ? entryLabel : isTp ? tpLabel : slLabel;
-            const labelIcon = isEntry ? (isLong ? "📥" : "📤") : isTp ? "🎯" : "🛡";
-            const tagText = isEntry ? "ENTRY" : isTp ? "TP" : "SL";
+      {/* Desktop: DOM left, anatomy+exit right */}
+      <div style={{ display: "flex", flexDirection: d ? "row" : "column", gap: d ? 24 : 14, alignItems: d ? "flex-start" : "stretch" }}>
+        {/* DOM with annotations */}
+        <div style={{ display: "flex", justifyContent: "center", flex: d ? "1 1 0" : undefined }}>
+          <div style={{ width: "100%", maxWidth: d ? 520 : 440 }}>
+            {prices.map((p, i) => {
+              const isEntry = i === entryIdx;
+              const isTp = i === tpIdx;
+              const isSl = i === slIdx;
+              const hasLabel = isEntry || isTp || isSl;
+              const labelColor = isEntry ? accent : isTp ? "#a78bfa" : "#f97316";
+              const labelText = isEntry ? entryLabel : isTp ? tpLabel : slLabel;
+              const labelIcon = isEntry ? (isLong ? "📥" : "📤") : isTp ? "🎯" : "🛡";
+              const tagText = isEntry ? "ENTRY" : isTp ? "TP" : "SL";
 
-            return (
-              <div key={i} style={{
-                display: "flex", alignItems: "center", height: d ? 42 : 34, padding: "0 8px",
-                background: hasLabel ? labelColor + "08" : "transparent",
-                borderBottom: "1px solid #0f1629",
-                borderLeft: isEntry ? `3px solid ${accent}` : isTp ? "3px solid #a78bfa" : isSl ? "3px solid #f97316" : "3px solid transparent",
-              }}>
-                <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 4 }}>
-                  {hasLabel && (
-                    <>
-                      <span style={{ fontSize: d ? 15 : 12 }}>{labelIcon}</span>
-                      <span style={{ fontSize: d ? 13 : 10, color: labelColor, fontWeight: 700, fontFamily: M }}>{labelText}</span>
-                      <Tag label={tagText} color={labelColor} d={d} />
-                    </>
-                  )}
+              return (
+                <div key={i} style={{
+                  display: "flex", alignItems: "center", height: d ? 42 : 34, padding: "0 8px",
+                  background: hasLabel ? labelColor + "08" : "transparent",
+                  borderBottom: "1px solid #0f1629",
+                  borderLeft: isEntry ? `3px solid ${accent}` : isTp ? "3px solid #a78bfa" : isSl ? "3px solid #f97316" : "3px solid transparent",
+                }}>
+                  <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 4 }}>
+                    {hasLabel && (
+                      <>
+                        <span style={{ fontSize: d ? 15 : 12 }}>{labelIcon}</span>
+                        <span style={{ fontSize: d ? 13 : 10, color: labelColor, fontWeight: 700, fontFamily: M }}>{labelText}</span>
+                        <Tag label={tagText} color={labelColor} d={d} />
+                      </>
+                    )}
+                  </div>
+                  <div style={{ fontSize: d ? 16 : 13, fontWeight: hasLabel ? 700 : 500, fontFamily: M, color: hasLabel ? "#f8fafc" : "#64748b", width: d ? 60 : 50, textAlign: "center" }}>{p}</div>
+                  <div style={{ width: d ? 100 : 80, textAlign: "right", fontSize: d ? 12 : 10, fontFamily: M }}>
+                    {isTp && <span style={{ color: "#a78bfa" }}>+{Math.abs(entryIdx - tpIdx)} ticks</span>}
+                    {isSl && <span style={{ color: "#f97316" }}>−{Math.abs(slIdx - entryIdx)} ticks</span>}
+                  </div>
                 </div>
-                <div style={{ fontSize: d ? 16 : 13, fontWeight: hasLabel ? 700 : 500, fontFamily: M, color: hasLabel ? "#f8fafc" : "#64748b", width: d ? 60 : 50, textAlign: "center" }}>{p}</div>
-                <div style={{ width: d ? 100 : 80, textAlign: "right", fontSize: d ? 12 : 10, fontFamily: M }}>
-                  {isTp && <span style={{ color: "#a78bfa" }}>+{Math.abs(entryIdx - tpIdx)} ticks</span>}
-                  {isSl && <span style={{ color: "#f97316" }}>−{Math.abs(slIdx - entryIdx)} ticks</span>}
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Right column: anatomy + exit */}
+        <div style={{ display: "flex", flexDirection: "column", gap: d ? 20 : 14, flex: d ? "1 1 0" : undefined }}>
+          <Box d={d}>
+            <SH text="TRADE ANATOMY" color={accent} d={d} />
+            <div style={{ display: "flex", flexDirection: "column", gap: d ? 14 : 10 }}>
+              {anatomy.map(r => (
+                <div key={r.step} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                  <div style={{ width: d ? 26 : 22, height: d ? 26 : 22, borderRadius: "50%", background: r.color + "22", border: `1px solid ${r.color}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: d ? 13 : 11, color: r.color, fontWeight: 700, fontFamily: M, flexShrink: 0 }}>{r.step}</div>
+                  <div>
+                    <div style={{ fontSize: d ? 14 : 12, color: "#e2e8f0", fontFamily: M, fontWeight: 600 }}>{r.text} <Tag label={r.tag} color={r.color} d={d} /></div>
+                    <div style={{ fontSize: d ? 12 : 10, color: "#64748b", fontFamily: M, marginTop: 2 }}>{r.detail}</div>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              ))}
+            </div>
+            <div style={{ marginTop: 10, fontSize: d ? 13 : 11, color: "#64748b", fontFamily: M }}>
+              R:R = {Math.abs(entryIdx - tpIdx)}:{Math.abs(slIdx - entryIdx)} ({(Math.abs(entryIdx - tpIdx) / Math.abs(slIdx - entryIdx)).toFixed(2)}:1) · OCO bracket — one fills, other cancels
+            </div>
+          </Box>
+
+          <Box top={accent} d={d}>
+            <SH text={exitSummary.title} color={accent} d={d} />
+            <div style={{ display: "flex", flexDirection: "column", gap: d ? 10 : 8 }}>
+              {exitSummary.items.map((item, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: d ? "10px 14px" : "8px 10px", background: "#111827", borderRadius: 6, borderLeft: `3px solid ${item.color}` }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: d ? 13 : 11, color: "#94a3b8", fontFamily: M }}>{item.label}</div>
+                    <div style={{ fontSize: d ? 14 : 12, color: item.color, fontWeight: 700, fontFamily: M }}>{item.order} <span style={{ fontWeight: 500, color: "#64748b" }}>{item.where}</span></div>
+                  </div>
+                  <div style={{ fontSize: d ? 11 : 9, color: "#64748b", fontFamily: M, maxWidth: d ? 180 : 140, textAlign: "right" }}>{item.type}</div>
+                </div>
+              ))}
+            </div>
+          </Box>
         </div>
       </div>
-
-      {/* Trade anatomy */}
-      <Box d={d}>
-        <SH text="TRADE ANATOMY" color={accent} d={d} />
-        <div style={{ display: "flex", flexDirection: "column", gap: d ? 14 : 10 }}>
-          {anatomy.map(r => (
-            <div key={r.step} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-              <div style={{ width: d ? 26 : 22, height: d ? 26 : 22, borderRadius: "50%", background: r.color + "22", border: `1px solid ${r.color}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: d ? 13 : 11, color: r.color, fontWeight: 700, fontFamily: M, flexShrink: 0 }}>{r.step}</div>
-              <div>
-                <div style={{ fontSize: d ? 14 : 12, color: "#e2e8f0", fontFamily: M, fontWeight: 600 }}>{r.text} <Tag label={r.tag} color={r.color} d={d} /></div>
-                <div style={{ fontSize: d ? 12 : 10, color: "#64748b", fontFamily: M, marginTop: 2 }}>{r.detail}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-        <div style={{ marginTop: 10, fontSize: d ? 13 : 11, color: "#64748b", fontFamily: M }}>
-          R:R = {Math.abs(entryIdx - tpIdx)}:{Math.abs(slIdx - entryIdx)} ({(Math.abs(entryIdx - tpIdx) / Math.abs(slIdx - entryIdx)).toFixed(2)}:1) · OCO bracket — one fills, other cancels
-        </div>
-      </Box>
-
-      {/* Exit summary */}
-      <Box top={accent} d={d}>
-        <SH text={exitSummary.title} color={accent} d={d} />
-        <div style={{ display: "flex", flexDirection: "column", gap: d ? 10 : 8 }}>
-          {exitSummary.items.map((item, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: d ? "10px 14px" : "8px 10px", background: "#111827", borderRadius: 6, borderLeft: `3px solid ${item.color}` }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: d ? 13 : 11, color: "#94a3b8", fontFamily: M }}>{item.label}</div>
-                <div style={{ fontSize: d ? 14 : 12, color: item.color, fontWeight: 700, fontFamily: M }}>{item.order} <span style={{ fontWeight: 500, color: "#64748b" }}>{item.where}</span></div>
-              </div>
-              <div style={{ fontSize: d ? 11 : 9, color: "#64748b", fontFamily: M, maxWidth: d ? 180 : 140, textAlign: "right" }}>{item.type}</div>
-            </div>
-          ))}
-        </div>
-      </Box>
     </div>
   );
 }
@@ -422,77 +435,80 @@ function ClicksView({ d }) {
         </div>
       </div>
 
-      {/* NT8 Desktop */}
-      <Box d={d}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: d ? 10 : 8 }}>
-          <span style={{ fontSize: d ? 18 : 14 }}>🖥</span>
-          <span style={{ fontSize: d ? 16 : 13, fontWeight: 700, color: "#60a5fa", fontFamily: M }}>NinjaTrader 8 Desktop</span>
-        </div>
-        <Step2 num="1" text="Select your ATM Strategy first (auto-attaches SL + TP bracket)" d={d} />
-        <Step2 num="2" text={isLong
-          ? "LEFT CLICK the BID column (left side) at your entry price → Buy Limit"
-          : "LEFT CLICK the ASK column (right side) at your entry price → Sell Limit"
-        } pills={[
-          <Pill key="a" text="Left Click" color="#94a3b8" d={d} />,
-          <Pill key="b" text={isLong ? "Bid / Left" : "Ask / Right"} color={isLong ? "#22c55e" : "#ef4444"} d={d} />,
-        ]} d={d} />
-        <Step2 num="3" text="ATM bracket auto-places your SL + TP. Done." d={d} />
-      </Box>
+      {/* Desktop: three platforms in a grid */}
+      <div style={{ display: d ? "grid" : "flex", gridTemplateColumns: d ? "1fr 1fr" : undefined, flexDirection: d ? undefined : "column", gap: d ? 16 : 14 }}>
+        {/* NT8 Desktop */}
+        <Box d={d}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: d ? 10 : 8 }}>
+            <span style={{ fontSize: d ? 18 : 14 }}>🖥</span>
+            <span style={{ fontSize: d ? 16 : 13, fontWeight: 700, color: "#60a5fa", fontFamily: M }}>NinjaTrader 8 Desktop</span>
+          </div>
+          <Step2 num="1" text="Select your ATM Strategy first (auto-attaches SL + TP bracket)" d={d} />
+          <Step2 num="2" text={isLong
+            ? "LEFT CLICK the BID column (left side) at your entry price → Buy Limit"
+            : "LEFT CLICK the ASK column (right side) at your entry price → Sell Limit"
+          } pills={[
+            <Pill key="a" text="Left Click" color="#94a3b8" d={d} />,
+            <Pill key="b" text={isLong ? "Bid / Left" : "Ask / Right"} color={isLong ? "#22c55e" : "#ef4444"} d={d} />,
+          ]} d={d} />
+          <Step2 num="3" text="ATM bracket auto-places your SL + TP. Done." d={d} />
+        </Box>
 
-      {/* NT8 Web */}
-      <Box d={d}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: d ? 10 : 8 }}>
-          <span style={{ fontSize: d ? 18 : 14 }}>🌐</span>
-          <span style={{ fontSize: d ? 16 : 13, fontWeight: 700, color: "#a78bfa", fontFamily: M }}>NinjaTrader Web</span>
-        </div>
-        {isLong ? (<>
-          <Step2 num="1" text="Entry: LEFT CLICK on LEFT (Bid) side → Buy Limit" pills={[<Pill key="a" text="Left Click" color="#94a3b8" d={d} />, <Pill key="b" text="Bid / Left" color="#22c55e" d={d} />, <Tag key="t" label="ENTRY" color="#22c55e" d={d} />]} d={d} />
-          <Step2 num="2" text="Stop: RIGHT CLICK on RIGHT (Ask) side below entry → Sell Stop" pills={[<Pill key="a" text="Right Click" color="#94a3b8" d={d} />, <Pill key="b" text="Ask / Right" color="#ef4444" d={d} />, <Tag key="t" label="SL" color="#f97316" d={d} />]} d={d} />
-          <Step2 num="3" text="Target: LEFT CLICK on RIGHT (Ask) side above entry → Sell Limit" pills={[<Pill key="a" text="Left Click" color="#94a3b8" d={d} />, <Pill key="b" text="Ask / Right" color="#ef4444" d={d} />, <Tag key="t" label="TP" color="#a78bfa" d={d} />]} d={d} />
-        </>) : (<>
-          <Step2 num="1" text="Entry: LEFT CLICK on RIGHT (Ask) side → Sell Limit" pills={[<Pill key="a" text="Left Click" color="#94a3b8" d={d} />, <Pill key="b" text="Ask / Right" color="#ef4444" d={d} />, <Tag key="t" label="ENTRY" color="#ef4444" d={d} />]} d={d} />
-          <Step2 num="2" text="Stop: RIGHT CLICK on LEFT (Bid) side above entry → Buy Stop" pills={[<Pill key="a" text="Right Click" color="#94a3b8" d={d} />, <Pill key="b" text="Bid / Left" color="#22c55e" d={d} />, <Tag key="t" label="SL" color="#f97316" d={d} />]} d={d} />
-          <Step2 num="3" text="Target: LEFT CLICK on LEFT (Bid) side below entry → Buy Limit" pills={[<Pill key="a" text="Left Click" color="#94a3b8" d={d} />, <Pill key="b" text="Bid / Left" color="#22c55e" d={d} />, <Tag key="t" label="TP" color="#a78bfa" d={d} />]} d={d} />
-        </>)}
-        <div style={{ marginTop: 6, fontSize: d ? 12 : 10, color: "#64748b", fontFamily: M }}>
-          Mnemonic: <span style={{ color: "#f8fafc", fontWeight: 700 }}>{isLong ? "LL · RR · LR" : "LR · RL · LL"}</span>
-          <span style={{ color: "#475569" }}> (click+side for Entry · Stop · TP)</span>
-        </div>
-      </Box>
+        {/* NT8 Web */}
+        <Box d={d}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: d ? 10 : 8 }}>
+            <span style={{ fontSize: d ? 18 : 14 }}>🌐</span>
+            <span style={{ fontSize: d ? 16 : 13, fontWeight: 700, color: "#a78bfa", fontFamily: M }}>NinjaTrader Web</span>
+          </div>
+          {isLong ? (<>
+            <Step2 num="1" text="Entry: LEFT CLICK on LEFT (Bid) side → Buy Limit" pills={[<Pill key="a" text="Left Click" color="#94a3b8" d={d} />, <Pill key="b" text="Bid / Left" color="#22c55e" d={d} />, <Tag key="t" label="ENTRY" color="#22c55e" d={d} />]} d={d} />
+            <Step2 num="2" text="Stop: RIGHT CLICK on RIGHT (Ask) side below entry → Sell Stop" pills={[<Pill key="a" text="Right Click" color="#94a3b8" d={d} />, <Pill key="b" text="Ask / Right" color="#ef4444" d={d} />, <Tag key="t" label="SL" color="#f97316" d={d} />]} d={d} />
+            <Step2 num="3" text="Target: LEFT CLICK on RIGHT (Ask) side above entry → Sell Limit" pills={[<Pill key="a" text="Left Click" color="#94a3b8" d={d} />, <Pill key="b" text="Ask / Right" color="#ef4444" d={d} />, <Tag key="t" label="TP" color="#a78bfa" d={d} />]} d={d} />
+          </>) : (<>
+            <Step2 num="1" text="Entry: LEFT CLICK on RIGHT (Ask) side → Sell Limit" pills={[<Pill key="a" text="Left Click" color="#94a3b8" d={d} />, <Pill key="b" text="Ask / Right" color="#ef4444" d={d} />, <Tag key="t" label="ENTRY" color="#ef4444" d={d} />]} d={d} />
+            <Step2 num="2" text="Stop: RIGHT CLICK on LEFT (Bid) side above entry → Buy Stop" pills={[<Pill key="a" text="Right Click" color="#94a3b8" d={d} />, <Pill key="b" text="Bid / Left" color="#22c55e" d={d} />, <Tag key="t" label="SL" color="#f97316" d={d} />]} d={d} />
+            <Step2 num="3" text="Target: LEFT CLICK on LEFT (Bid) side below entry → Buy Limit" pills={[<Pill key="a" text="Left Click" color="#94a3b8" d={d} />, <Pill key="b" text="Bid / Left" color="#22c55e" d={d} />, <Tag key="t" label="TP" color="#a78bfa" d={d} />]} d={d} />
+          </>)}
+          <div style={{ marginTop: 6, fontSize: d ? 12 : 10, color: "#64748b", fontFamily: M }}>
+            Mnemonic: <span style={{ color: "#f8fafc", fontWeight: 700 }}>{isLong ? "LL · RR · LR" : "LR · RL · LL"}</span>
+            <span style={{ color: "#475569" }}> (click+side for Entry · Stop · TP)</span>
+          </div>
+        </Box>
 
-      {/* Sierra Chart */}
-      <Box d={d}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: d ? 10 : 8 }}>
-          <span style={{ fontSize: d ? 18 : 14 }}>📊</span>
-          <span style={{ fontSize: d ? 16 : 13, fontWeight: 700, color: "#22c55e", fontFamily: M }}>Sierra Chart</span>
-        </div>
-        {isLong ? (<>
-          <Step2 num="1" text="Entry: Click the BID column (Green/Left) → Buy Limit" pills={[<Pill key="b" text="Green / Bid" color="#22c55e" d={d} />, <Tag key="t" label="ENTRY" color="#22c55e" d={d} />]} d={d} />
-          <Step2 num="2" text="Stop: Click the ASK column (Red/Right) below entry → Sell Stop" pills={[<Pill key="b" text="Red / Ask" color="#ef4444" d={d} />, <Tag key="t" label="SL" color="#f97316" d={d} />]} d={d} />
-          <Step2 num="3" text="Target: Click the ASK column (Red/Right) above entry → Sell Limit" pills={[<Pill key="b" text="Red / Ask" color="#ef4444" d={d} />, <Tag key="t" label="TP" color="#a78bfa" d={d} />]} d={d} />
-        </>) : (<>
-          <Step2 num="1" text="Entry: Click the ASK column (Red/Right) → Sell Limit" pills={[<Pill key="b" text="Red / Ask" color="#ef4444" d={d} />, <Tag key="t" label="ENTRY" color="#ef4444" d={d} />]} d={d} />
-          <Step2 num="2" text="Stop: Click the BID column (Green/Left) above entry → Buy Stop" pills={[<Pill key="b" text="Green / Bid" color="#22c55e" d={d} />, <Tag key="t" label="SL" color="#f97316" d={d} />]} d={d} />
-          <Step2 num="3" text="Target: Click the BID column (Green/Left) below entry → Buy Limit" pills={[<Pill key="b" text="Green / Bid" color="#22c55e" d={d} />, <Tag key="t" label="TP" color="#a78bfa" d={d} />]} d={d} />
-        </>)}
-        <div style={{ marginTop: 6, fontSize: d ? 12 : 10, color: "#64748b", fontFamily: M }}>
-          Mnemonic: <span style={{ color: "#f8fafc", fontWeight: 700 }}>{isLong ? "G · R · R" : "R · G · G"}</span>
-          <span style={{ color: "#475569" }}> (column colour for Entry · Stop · TP)</span>
-        </div>
-      </Box>
+        {/* Sierra Chart */}
+        <Box d={d}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: d ? 10 : 8 }}>
+            <span style={{ fontSize: d ? 18 : 14 }}>📊</span>
+            <span style={{ fontSize: d ? 16 : 13, fontWeight: 700, color: "#22c55e", fontFamily: M }}>Sierra Chart</span>
+          </div>
+          {isLong ? (<>
+            <Step2 num="1" text="Entry: Click the BID column (Green/Left) → Buy Limit" pills={[<Pill key="b" text="Green / Bid" color="#22c55e" d={d} />, <Tag key="t" label="ENTRY" color="#22c55e" d={d} />]} d={d} />
+            <Step2 num="2" text="Stop: Click the ASK column (Red/Right) below entry → Sell Stop" pills={[<Pill key="b" text="Red / Ask" color="#ef4444" d={d} />, <Tag key="t" label="SL" color="#f97316" d={d} />]} d={d} />
+            <Step2 num="3" text="Target: Click the ASK column (Red/Right) above entry → Sell Limit" pills={[<Pill key="b" text="Red / Ask" color="#ef4444" d={d} />, <Tag key="t" label="TP" color="#a78bfa" d={d} />]} d={d} />
+          </>) : (<>
+            <Step2 num="1" text="Entry: Click the ASK column (Red/Right) → Sell Limit" pills={[<Pill key="b" text="Red / Ask" color="#ef4444" d={d} />, <Tag key="t" label="ENTRY" color="#ef4444" d={d} />]} d={d} />
+            <Step2 num="2" text="Stop: Click the BID column (Green/Left) above entry → Buy Stop" pills={[<Pill key="b" text="Green / Bid" color="#22c55e" d={d} />, <Tag key="t" label="SL" color="#f97316" d={d} />]} d={d} />
+            <Step2 num="3" text="Target: Click the BID column (Green/Left) below entry → Buy Limit" pills={[<Pill key="b" text="Green / Bid" color="#22c55e" d={d} />, <Tag key="t" label="TP" color="#a78bfa" d={d} />]} d={d} />
+          </>)}
+          <div style={{ marginTop: 6, fontSize: d ? 12 : 10, color: "#64748b", fontFamily: M }}>
+            Mnemonic: <span style={{ color: "#f8fafc", fontWeight: 700 }}>{isLong ? "G · R · R" : "R · G · G"}</span>
+            <span style={{ color: "#475569" }}> (column colour for Entry · Stop · TP)</span>
+          </div>
+        </Box>
 
-      {/* Naked position warning */}
-      <Box top="#f97316" d={d}>
-        <SH text="⚠ ENTERED WITHOUT A BRACKET?" color="#f97316" d={d} />
-        <div style={{ fontSize: d ? 14 : 11, color: "#cbd5e1", fontFamily: M, lineHeight: 1.7 }}>
-          You're in a live position with no protection. <span style={{ color: "#f8fafc", fontWeight: 700 }}>Add Stop Loss FIRST, then Take Profit.</span>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 8, fontSize: d ? 13 : 11, color: "#94a3b8", fontFamily: M, lineHeight: 1.6 }}>
-          <div><span style={{ color: "#60a5fa", fontWeight: 600 }}>NT8:</span> Right-click position → Create OCO Bracket, or apply ATM to live position</div>
-          <div><span style={{ color: "#a78bfa", fontWeight: 600 }}>NT8 Web:</span> Manually place SL (right click) then TP (left click) on the DOM</div>
-          <div><span style={{ color: "#22c55e", fontWeight: 600 }}>Sierra:</span> Right-click order → Attach OCO bracket, or place manually and link as OCO</div>
-        </div>
-      </Box>
+        {/* Naked position warning */}
+        <Box top="#f97316" d={d}>
+          <SH text="⚠ ENTERED WITHOUT A BRACKET?" color="#f97316" d={d} />
+          <div style={{ fontSize: d ? 14 : 11, color: "#cbd5e1", fontFamily: M, lineHeight: 1.7 }}>
+            You're in a live position with no protection. <span style={{ color: "#f8fafc", fontWeight: 700 }}>Add Stop Loss FIRST, then Take Profit.</span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 8, fontSize: d ? 13 : 11, color: "#94a3b8", fontFamily: M, lineHeight: 1.6 }}>
+            <div><span style={{ color: "#60a5fa", fontWeight: 600 }}>NT8:</span> Right-click position → Create OCO Bracket, or apply ATM to live position</div>
+            <div><span style={{ color: "#a78bfa", fontWeight: 600 }}>NT8 Web:</span> Manually place SL (right click) then TP (left click) on the DOM</div>
+            <div><span style={{ color: "#22c55e", fontWeight: 600 }}>Sierra:</span> Right-click order → Attach OCO bracket, or place manually and link as OCO</div>
+          </div>
+        </Box>
+      </div>
     </div>
   );
 }
@@ -531,8 +547,8 @@ function RefView({ d }) {
         </table>
       </div>
 
-      {/* Stop loss vs stop limit */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: d ? 14 : 10 }}>
+      {/* Desktop: three boxes in a row */}
+      <div style={{ display: d ? "grid" : "flex", gridTemplateColumns: d ? "1fr 1fr 1fr" : undefined, flexDirection: d ? undefined : "column", gap: d ? 14 : 10 }}>
         <Box top="#22c55e" d={d}>
           <SH text="STOP LOSS (Market)" color="#22c55e" d={d} />
           <div style={{ fontSize: d ? 14 : 11, color: "#94a3b8", fontFamily: M, lineHeight: 1.7 }}>
@@ -553,20 +569,18 @@ function RefView({ d }) {
             <span style={{ color: "#ef4444", fontWeight: 700 }}>✗ Risky for protection</span>
           </div>
         </Box>
+        <Box top="#60a5fa" d={d}>
+          <SH text="CHEAT SHEET" color="#60a5fa" d={d} />
+          <div style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: d ? 13 : 11, color: "#cbd5e1", fontFamily: M, lineHeight: 1.7 }}>
+            <div>Limit = <span style={{ color: "#f8fafc", fontWeight: 600 }}>you set the price</span></div>
+            <div>Stop = <span style={{ color: "#f8fafc", fontWeight: 600 }}>market sets the fill</span></div>
+            <div>TP = always a <span style={{ color: "#f8fafc", fontWeight: 600 }}>Limit</span></div>
+            <div>SL = always a <span style={{ color: "#f8fafc", fontWeight: 600 }}>Stop</span></div>
+            <div>OCO = TP fills → SL cancels</div>
+            <div style={{ color: "#f97316", fontWeight: 600, marginTop: 4 }}>ALWAYS bracket BEFORE entry.</div>
+          </div>
+        </Box>
       </div>
-
-      {/* Cheat sheet */}
-      <Box top="#60a5fa" d={d}>
-        <SH text="CHEAT SHEET" color="#60a5fa" d={d} />
-        <div style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: d ? 14 : 11, color: "#cbd5e1", fontFamily: M, lineHeight: 1.7 }}>
-          <div>Limit = <span style={{ color: "#f8fafc", fontWeight: 600 }}>you set the price</span> (passive, provide liquidity)</div>
-          <div>Stop = <span style={{ color: "#f8fafc", fontWeight: 600 }}>market sets the fill</span> (reactive, take liquidity)</div>
-          <div>TP is always a <span style={{ color: "#f8fafc", fontWeight: 600 }}>Limit</span> — exit passively at target</div>
-          <div>SL is always a <span style={{ color: "#f8fafc", fontWeight: 600 }}>Stop</span> — exit reactively for protection</div>
-          <div>OCO = One Cancels Other — TP fills → SL cancels</div>
-          <div style={{ color: "#f97316", fontWeight: 600, marginTop: 4 }}>ALWAYS attach bracket BEFORE entry. SL first if adding manually.</div>
-        </div>
-      </Box>
     </div>
   );
 }
@@ -577,13 +591,13 @@ export default function App() {
   const d = useDesktop();
 
   return (
-    <div style={{ minHeight: "100vh", background: "#030712", color: "#f8fafc", fontFamily: M, padding: d ? "40px 24px" : "20px 10px", display: "flex", flexDirection: "column", alignItems: "center" }}>
-      <div style={{ textAlign: "center", marginBottom: d ? 20 : 14 }}>
+    <div style={{ minHeight: "100vh", background: "#030712", color: "#f8fafc", fontFamily: M, padding: d ? "32px 24px" : "20px 10px", display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <div style={{ textAlign: "center", marginBottom: d ? 16 : 14 }}>
         <div style={{ fontSize: d ? 11 : 9, letterSpacing: 4, color: "#3b82f6", marginBottom: 4, textTransform: "uppercase" }}>ES Futures</div>
         <div style={{ fontSize: d ? 28 : 18, fontWeight: 800, background: "linear-gradient(135deg, #60a5fa, #a78bfa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>DOM & Order Types</div>
       </div>
 
-      <div style={{ display: "flex", gap: d ? 4 : 2, background: "#111827", borderRadius: 8, padding: d ? 4 : 3, marginBottom: d ? 20 : 14, width: "100%", maxWidth: d ? 780 : 520, overflowX: "auto" }}>
+      <div style={{ display: "flex", gap: d ? 4 : 2, background: "#111827", borderRadius: 8, padding: d ? 4 : 3, marginBottom: d ? 16 : 14, width: "100%", maxWidth: d ? 1100 : 520, overflowX: "auto" }}>
         {VIEWS.map(v => (
           <button key={v.id} onClick={() => setView(v.id)} style={{
             flex: 1, padding: d ? "10px 8px" : "7px 2px", fontSize: d ? 12 : 9, fontWeight: view === v.id ? 700 : 500,
@@ -595,9 +609,8 @@ export default function App() {
         ))}
       </div>
 
-      {/* Card container on desktop */}
       <div style={{
-        width: "100%", maxWidth: d ? 780 : 520,
+        width: "100%", maxWidth: d ? 1100 : 520,
         ...(d ? {
           background: "#0a0f1e",
           border: "1px solid #1e293b",
@@ -614,7 +627,7 @@ export default function App() {
         {view === "ref" && <RefView d={d} />}
       </div>
 
-      <div style={{ marginTop: d ? 28 : 20, fontSize: d ? 11 : 9, color: "#334155", textAlign: "center", fontFamily: M }}>© tagebar · ES scalping reference</div>
+      <div style={{ marginTop: d ? 20 : 20, fontSize: d ? 11 : 9, color: "#334155", textAlign: "center", fontFamily: M }}>© tagebar · ES scalping reference</div>
     </div>
   );
 }
